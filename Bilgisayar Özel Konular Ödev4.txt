@@ -1,162 +1,95 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+package com.company;
 
-namespace ArithmeticExpressionsDemo
-{
-    class Program
-    {
-        public static void Main(string[] args)
+import java.util.Scanner;
+import java.util.Stack;
+
+public class Main {
+
+    public static void main(String[] args) {
+
+        Scanner scan = new Scanner(System.in);
+        /* Create stacks for operators and operands */
+        Stack<Integer> op  = new Stack<Integer>();
+        Stack<Double> val = new Stack<Double>();
+        /* Create temporary stacks for operators and operands */
+        Stack<Integer> optmp  = new Stack<Integer>();
+        Stack<Double> valtmp = new Stack<Double>();
+        /* Accept expression */
+        System.out.println("Evaluation Of Arithmetic Expression Using Stacks Test\n");
+        System.out.println("Enter expression\n");
+        String input = scan.next();
+        input = "0" + input;
+        input = input.replaceAll("-","+-");
+        /* Store operands and operators in respective stacks */
+        String temp = "";
+        for (int i = 0;i < input.length();i++)
         {
-
-            while (true)
+            char ch = input.charAt(i);
+            if (ch == '-')
+                temp = "-" + temp;
+            else if (ch != '+' &&  ch != '*' && ch != '/')
+                temp = temp + ch;
+            else
             {
-                Console.Write("Yeni İşlem giriniz : ");
-                string inputValue = Console.ReadLine();
-
-                if (string.IsNullOrEmpty(inputValue))
-                    break;
-
-                // Get all input character, Add to Array (Char)
-                char[] charList = inputValue.ToCharArray();
-
-                // Calculate CharList Input
-                int result = ExpressionOperation(charList);
-
-                Console.WriteLine("İşlem Sonucu :");
-                Console.WriteLine("              {0}={1}\n", inputValue, result);
-
+                val.push(Double.parseDouble(temp));
+                op.push((int)ch);
+                temp = "";
             }
         }
-
-        /// <summary>
-        /// Start to Calculation for input Array
-        /// </summary>
-        /// <returns></returns>
-        public static int ExpressionOperation(char[] inputArray)
+        val.push(Double.parseDouble(temp));
+        /* Create char array of operators as per precedence */
+        /* -ve sign is already taken care of while storing */
+        char operators[] = {'/','*','+'};
+        /* Evaluation of expression */
+        for (int i = 0; i < 3; i++)
         {
-
-            Stack<int> valueStack = new Stack<int>();
-            Stack<char> operatorStack = new Stack<char>();
-
-            operatorStack.Push('('); // Add "(" to operator stack
-
-            int index = 0;
-            while (index <= inputArray.Length)
+            boolean it = false;
+            while (!op.isEmpty())
             {
-                // If there are any Closed Parenthesis, Remove it from stack
-                if (index == inputArray.Length || inputArray[index] == ')')
+                int optr = op.pop();
+                double v1 = val.pop();
+                double v2 = val.pop();
+                if (optr == operators[i])
                 {
-                    CloseParenthesis(valueStack, operatorStack);
-                    index++;
-                }
-                // Add Input Numbers to ValueStack
-                else if (inputArray[index] >= '0' && inputArray[index] <= '9')
-                {
-                    index = AddNumberToValueStack(inputArray, index, valueStack);
+                    /* if operator matches evaluate and store in temporary stack */
+                    if (i == 0)
+                    {
+                        valtmp.push(v2 / v1);
+                        it = true;
+                        break;
+                    }
+                    else if (i == 1)
+                    {
+                        valtmp.push(v2 * v1);
+                        it = true;
+                        break;
+                    }
+                    else if (i == 2)
+                    {
+                        valtmp.push(v2 + v1);
+                        it = true;
+                        break;
+                    }
                 }
                 else
                 {
-                    InputOperator(inputArray[index], valueStack, operatorStack);
-                    index++;
+                    valtmp.push(v1);
+                    val.push(v2);
+                    optmp.push(optr);
                 }
-
             }
-            return valueStack.Pop(); // Result stack values
+            /* Push back all elements from temporary stacks to main stacks */
+            while (!valtmp.isEmpty())
+                val.push(valtmp.pop());
+            while (!optmp.isEmpty())
+                op.push(optmp.pop());
+            /* Iterate again for same operator */
+            if (it)
+                i--;
         }
+        System.out.println("\nResult = "+val.pop());
 
-        /// <summary>
-        /// Calculate inputValues according to Operator Types
-        /// </summary>
-        /// <param name="valueStack"></param>
-        /// <param name="operatorStack"></param>
-        static void Calculate(Stack<int> valueStack, Stack<char> operatorStack)
-        {
-            int sagTaraf = valueStack.Pop();
-            int solTaraf = valueStack.Pop();
-            char op = operatorStack.Pop();
-            int result = 0;
-            
-            switch (op)
-            {
-                case '+':
-                    result = sol + sag;
-                    break;
-                case '-':
-                    result = sol - sag;
-                    break;
-                case '*':
-                    result = sol * sag;
-                    break;
-                case '/':
-                    result = sol / sag;
-                    break;
-                case '%':
-                    result = sol % sag;
-                    break;
-            }
-            valueStack.Push(result);
-        }
 
-        static void CloseParenthesis(Stack<int> valueStack, Stack<char> operatorStack)
-        {
-            while (operatorStack.Peek() != '(')
-            {
-                Calculate(valueStack, operatorStack);
-            }
-            operatorStack.Pop(); // Remove Parenthesis
-        }
-
-        static int AddNumberToValueStack(char[] charList, int index, Stack<int> valueStack)
-        {
-            int value = 0;
-            while (index < charList.Length && charList[index] >= '0' && charList[index] <= '9')
-            {
-                value = 10 * value + (int)(charList[index++] - '0');
-            }
-            valueStack.Push(value);
-
-            return index;
-        }
-
-        /// <summary>
-        /// Input Operations Method for ValueStack according to OperatorType
-        /// </summary>
-        /// <param name="operatorType"></param>
-        /// <param name="valueStack"></param>
-        /// <param name="operatorStack"></param>
-        private static void InputOperator(char operatorType, Stack<int> valueStack, Stack<char> operatorStack)
-        {
-            while (operatorStack.Count > 0 && CheckOperatorType(operatorType, operatorStack.Peek()))
-            {
-                Calculate(valueStack, operatorStack);
-            }
-            operatorStack.Push(operatorType);
-        }
-
-        static bool CheckOperatorType(char operatorType, char prevOperator)
-        {
-            bool result = false;
-            switch (operatorType)
-            {
-                case '+':
-                case '-':
-                    result = (prevOperator != '(');
-                    break;
-                case '*':
-                case '/':
-                case '%':
-                    result = (prevOperator == '*' || prevOperator == '/' || prevOperator == '%');
-                    break;
-                case ')':
-                    result = true;
-                    break;
-            }
-            return result;
-        }
 
     }
-
 }
